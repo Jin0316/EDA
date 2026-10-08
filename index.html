@@ -69,7 +69,14 @@
 
   /* ---- 왼쪽: 회로 목록 ---- */
   .left { flex: 0 0 248px; height: 100%; display: flex; flex-direction: column; border-right: 1px solid var(--hair); background: var(--panel); }
-  .left-head { padding: 16px 16px 8px; display: flex; align-items: center; justify-content: space-between; }
+  .left-head { padding: 12px 8px 8px 16px; display: flex; align-items: center; gap: 8px; }
+  .icon-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 4px; background: transparent; color: var(--muted); }
+  .icon-btn:hover { background: var(--card); color: var(--ink); }
+  .top .icon-btn { margin-left: -8px; }
+  .resizer { flex: 0 0 6px; margin: 0 -3px; position: relative; z-index: 2; cursor: col-resize; touch-action: none; }
+  .resizer::after { content: ""; position: absolute; top: 0; bottom: 0; left: 2px; width: 2px; background: transparent; }
+  .resizer:hover::after, .resizer:focus-visible::after, .resizer.dragging::after { background: var(--accent); }
+  .resizer:focus-visible { outline: none; }
   .left-head h2 { margin: 0; font-size: 13px; font-weight: 600; }
   .search { margin: 0 16px 8px; display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border: 1px solid var(--line); border-radius: 4px; }
   .search input { border: 0; outline: none; flex: 1; min-width: 0; background: transparent; }
@@ -198,7 +205,8 @@
   @media (max-width: 900px) {
     .app { height: auto; overflow: visible; }
     .cols { flex-direction: column; overflow: visible; }
-    .left, .right { flex: none; width: auto; height: auto; max-height: 50vh; }
+    .left, .right { flex: none !important; width: auto; height: auto; max-height: 50vh; }
+    .resizer { display: none; }
     .center { height: 80vh; }
   }
 </style>
@@ -206,9 +214,10 @@
 <body>
 <div class="app">
   <header class="top">
+    <button type="button" class="icon-btn" id="leftOpen" hidden aria-label="회로 목록 펼치기" title="회로 목록 펼치기">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M13 10l2 2-2 2"/></svg>
+    </button>
     <h1>Analog Layout Generator</h1>
-    <span class="sp"></span>
-    <a href="https://github.com/gotzawal/chip">GitHub</a>
   </header>
   <!-- 개념 설명: 화면에는 표기하지 않는다. 다시 보이려면 hidden 을 빼면 된다. -->
   <details class="intro" id="intro" hidden>
@@ -222,7 +231,11 @@
 
   <div class="cols" id="cols">
     <nav class="left" aria-label="회로">
-      <div class="left-head"><h2>프로젝트</h2><span class="dim" id="projCount"></span></div>
+      <div class="left-head"><h2>프로젝트</h2><span class="dim" id="projCount" style="margin-left:auto"></span>
+        <button type="button" class="icon-btn" id="leftClose" aria-label="회로 목록 접기" title="회로 목록 접기">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 10l-2 2 2 2"/></svg>
+        </button>
+      </div>
       <label class="search"><span class="sr-only">회로 찾기</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
         <input id="projSearch" type="search" placeholder="회로 찾기">
@@ -318,7 +331,8 @@ HPWL 은 핀 경계 사각형으로 잰다 (ALIGN 의 HPWL_extend). 다음 place
       </div>
     </main>
 
-    <aside class="right" aria-label="속성">
+    <div class="resizer" id="rightResizer" role="separator" aria-orientation="vertical" aria-label="오른쪽 패널 폭 (끌거나 ←/→, 더블클릭이면 기본 폭)" tabindex="0"></div>
+    <aside class="right" id="rightPanel" aria-label="속성">
       <section class="sec edit" id="editCard" hidden>
         <h2 title="배치를 손으로 고친다. 끌기는 제약을 따라 움직이고(거울 쌍은 거울로, 축 위 블록은 축을 따라), 정리는 사용자가
 정한 위상(쌍의 상대 위치)을 그대로 둔 채 겹침을 없애고 격자에 앉힌다. 편집이 없으면 지금 그대로다.">편집</h2>
@@ -897,7 +911,9 @@ const mkRow = (dl, k, v, cls) => {
   d.append(dt, dd); dl.append(d);
 };
 
+let lastInfo = null;     // 회로를 바꿨다 돌아올 때 다시 보이려고 (stashResults)
 function showInfo(b) {
+  lastInfo = b;
   const dl = $("info"); dl.textContent = "";
   mkRow(dl, "블록", String(b.blocks ?? "—"));
   mkRow(dl, "모듈", b.modules > 1 ? `${b.modules} <small>(계층)</small>` : "1");
@@ -1146,6 +1162,7 @@ async function ingest(fileList) {
       setStatus('<span class="dot"></span><span>읽는 중…</span>');
       const blob = await ingest(fl);
       const nInst = (blob.topology.modules.at(-1).instances ?? []).length;
+      stashResults(shownKey); shownKey = "__upload__"; resultCache.delete("__upload__");
       blobs.set("__upload__", blob);
       const o = document.createElement("option");
       o.value = "__upload__";
@@ -1609,8 +1626,9 @@ async function preview(name) {
 }
 
 const sel = $("ex");
-sel.addEventListener("change", () => {
+sel.addEventListener("change", async () => {
   const v = sel.value;
+  stashResults(shownKey); shownKey = v;
   if (v === "__upload__") {
     ours = null; frame = null; routed = null; liveRec = null; routeFail = null; hover = null;
     editor?.placed(null);
@@ -1619,9 +1637,12 @@ sel.addEventListener("change", () => {
     showBlocks(views.get(v)?.blocks);
     showDrc(null); clearDownloads(); redraw();
     setStatus("<span>올린 설계 — Placement 실행을 누르세요</span>");
+    restoreResults(v);
     return;
   }
-  preview(v); clearDownloads();
+  const p = preview(v); clearDownloads();
+  await p;
+  if (sel.value === v) restoreResults(v);
 });
 $("run").addEventListener("click", run);
 addEventListener("resize", () => redraw());
@@ -1634,10 +1655,12 @@ loadExampleList().then((rows) => {
     o.value = name; o.textContent = label; sel.append(o);
   }
   if (!rows.length) return;
+  shownKey = rows[0].name;
   preview(rows[0].name);
 });
 
 // ================================================================ 새 화면의 접착 코드
+var resultCache = new Map(), shownKey = null;   // 회로별 결과 보관 (아래 stashResults)
 // 배치·배선·검사 로직은 건드리지 않는다. 화면 상태만 맞춘다.
 // (setStatus 가 이 함수들을 부르므로 var · function 선언으로 둔다 — 정의 전에 불려도 터지지 않게)
 
@@ -1675,7 +1698,7 @@ function renderProjects() {
   if (!list || !ex) return;
   const opts = [...ex.options];
   // 진행 메시지마다 불리므로 바뀐 것이 없으면 다시 만들지 않는다
-  const sig = [opts.length, ex.value, projFilter, inProgress(), !!ours, !!liveRec, !!routeFail, liveRec?.errors?.length ?? 0].join("|");
+  const sig = [opts.length, ex.value, projFilter, inProgress(), [...resultCache.keys()].join(","), !!ours, !!liveRec, !!routeFail, liveRec?.errors?.length ?? 0].join("|");
   if (sig === projSig) return;
   projSig = sig;
   $("projCount").textContent = opts.length ? `${opts.length}개` : "";
@@ -1701,6 +1724,13 @@ function renderProjects() {
         const st = document.createElement("span"); st.className = "st";
         const dot = document.createElement("i"); dot.style.background = curStatus[1];
         st.append(dot, curStatus[0]); b.append(st);
+      } else if (resultCache.has(o.value)) {
+        const c = resultCache.get(o.value), n = c.routedMsg ? (c.routedMsg.nerrors ?? c.routedMsg.errors?.length ?? 0) : 0;
+        const [txt, col] = c.routeFail && !c.routedMsg ? ["Routing 실패", "var(--copper)"]
+          : c.routedMsg ? [`배선 완료, DRC ${n}`, n ? "var(--copper)" : "var(--good)"] : ["Placement까지", "var(--warn)"];
+        const st = document.createElement("span"); st.className = "st";
+        const dot = document.createElement("i"); dot.style.background = col;
+        st.append(dot, txt); b.append(st);
       } else if (o.textContent && o.textContent !== o.value && o.value !== "__upload__") {
         const st = document.createElement("span"); st.className = "st"; st.textContent = o.textContent; b.append(st);
       }
@@ -1814,6 +1844,70 @@ darkMQ?.addEventListener?.("change", paintThemeBtn);
 paintThemeBtn();
 syncRun();
 renderProjects();
+
+// ---- 회로별 결과 보관: 다른 회로를 골랐다가 돌아와도 Placement · Routing 결과가 남는다 ----
+// 결과 객체(ours, 배선 결과)를 그대로 들고 있다가 기존 표시 함수로 다시 꽂는다. 계산 로직은 그대로다.
+function stashResults(key) {
+  if (!key) return;
+  if (!ours) { resultCache.delete(key); return; }
+  resultCache.set(key, { ours, info: lastInfo, routedMsg: liveRec ? lastRouted : null, routeFail, status: $("status").innerHTML });
+}
+function restoreResults(key) {
+  const c = resultCache.get(key);
+  if (!c || busy) return;
+  ours = c.ours; frame = null;
+  if (c.info) showInfo(c.info);
+  editor?.placed(ours);
+  showResult(ours);
+  placeDownloads();
+  $("routeRun").disabled = false;
+  if (c.routedMsg) applyRouted(c.routedMsg, { view: false });
+  else { routeFail = c.routeFail; showDrc(); }
+  redraw();
+  setStatus(c.status);
+}
+
+// ---- 오른쪽 패널 폭 조절 (끌기 · 화살표 · 더블클릭 초기화), 왼쪽 목록 접기 ----
+var RIGHT_KEY = "alg-right-w", LEFT_KEY = "alg-left-closed";
+const rightPanel = $("rightPanel"), resizer = $("rightResizer");
+const RIGHT_MIN = 240, RIGHT_MAX = 720, RIGHT_DEF = 300;
+function setRightW(w, save = true) {
+  w = Math.round(Math.min(RIGHT_MAX, Math.max(RIGHT_MIN, w)));
+  rightPanel.style.flexBasis = w + "px";
+  resizer.setAttribute("aria-valuenow", String(w));
+  if (save) try { localStorage.setItem(RIGHT_KEY, String(w)); } catch {}
+}
+try { const w = Number(localStorage.getItem(RIGHT_KEY)); if (w) setRightW(w, false); } catch {}
+let rz = null;
+resizer.addEventListener("pointerdown", (e) => {
+  rz = { x: e.clientX, w: rightPanel.getBoundingClientRect().width };
+  resizer.setPointerCapture(e.pointerId); resizer.classList.add("dragging");
+});
+resizer.addEventListener("pointermove", (e) => { if (rz) setRightW(rz.w - (e.clientX - rz.x)); });
+const rzEnd = () => { rz = null; resizer.classList.remove("dragging"); };
+resizer.addEventListener("pointerup", rzEnd);
+resizer.addEventListener("pointercancel", rzEnd);
+resizer.addEventListener("dblclick", () => setRightW(RIGHT_DEF));
+resizer.addEventListener("keydown", (e) => {
+  const w = rightPanel.getBoundingClientRect().width;
+  if (e.key === "ArrowLeft") { setRightW(w + 16); e.preventDefault(); }
+  else if (e.key === "ArrowRight") { setRightW(w - 16); e.preventDefault(); }
+});
+
+const leftNav = document.querySelector(".left");
+function setLeftClosed(closed, save = true) {
+  leftNav.hidden = closed;
+  $("leftOpen").hidden = !closed;
+  if (save) try { localStorage.setItem(LEFT_KEY, closed ? "1" : "0"); } catch {}
+  (closed ? $("leftOpen") : $("leftClose")).focus({ preventScroll: true });
+}
+$("leftClose").addEventListener("click", () => setLeftClosed(true));
+$("leftOpen").addEventListener("click", () => setLeftClosed(false));
+try { if (localStorage.getItem(LEFT_KEY) === "1") { leftNav.hidden = true; $("leftOpen").hidden = false; } } catch {}
+
+// 패널 폭이 바뀌면 캔버스를 다시 맞춘다 (창 크기 변화는 기존 resize 가 맡는다)
+let rzFrame = 0;
+new ResizeObserver(() => { cancelAnimationFrame(rzFrame); rzFrame = requestAnimationFrame(() => redraw()); }).observe($("stage"));
 </script>
 </body>
 </html>
