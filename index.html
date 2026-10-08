@@ -1,483 +1,384 @@
+<!doctype html>
+<html lang="ko">
+<head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Analog Layout Generator</title>
+<script>try { const t = localStorage.getItem("alg-theme"); if (t === "dark" || t === "light") document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
 <style>
-  /* 팔레트는 이 주제에서 나왔다. 구리(배선 금속)가 강조색, 마젠타는 대칭축 —
-     이 배치기가 하는 일 자체가 대칭이라 축에만 진한 색을 쓴다.
-     중성색은 강조색의 반대쪽으로 살짝 차게 기울였다. */
+  /* Superb AI 디자인 시스템 토큰. 캔버스 그리기(readPal)가 읽는 변수 이름
+     (--sunk --ink --faint --axis --block --block-line --ours --hair)은 그대로 둔다. */
   :root {
-    --ground: #eef1f4;
-    --panel: #ffffff;
-    --sunk: #e6eaee;
-    --ink: #12181f;
-    --muted: #5a6772;
-    --faint: #8996a1;
-    --line: #d2d9e0;
-    --hair: #e4e9ee;
-    --copper: #a8551f;
-    --copper-soft: #f3e3d7;
-    --axis: #9c2d66;
-    --block: #a8bccd;
-    --block-line: #45596b;
-    --ours: #a8551f;
-    --good: #2f6f4e;
-    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+    --ground: #ffffff; --panel: #ffffff; --sunk: #f9f9f9; --card: #f9f9f9;
+    --ink: #1a1a1a; --muted: #4b4b4b; --faint: #8a8f98;
+    --line: #d7d9de; --hair: #ececef;
+    --accent: #0057ff; --accent-ink: #ffffff; --link: #0057ff; --tint: #f2f7ff;
+    --copper: #d92d1e; --copper-soft: #fdecea; --good: #1f8a43; --warn: #f5a623; --idle: #d7d9de;
+    --axis: #ff2f67; --block: #ffffff; --block-line: #4b4b4b; --ours: #0057ff;
+    --btn2: #1a1a1a; --btn2-ink: #ffffff;
+    --sans: "Inter", "Pretendard", "Noto Sans KR", system-ui, -apple-system, "Segoe UI", sans-serif;
     --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Noto Sans Mono", monospace;
+    color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --ground: #0d1218;
-      --panel: #151c24;
-      --sunk: #101720;
-      --ink: #e3eaf1;
-      --muted: #93a2af;
-      --faint: #6b7a88;
-      --line: #27313c;
-      --hair: #1d2530;
-      --copper: #e0913f;
-      --copper-soft: #33241a;
-      --axis: #e173ab;
-      --block: #40566a;
-      --block-line: #8fa8bd;
-      --ours: #e0913f;
-      --good: #5fc08c;
+      --ground: #0b1030; --panel: #0b1030; --sunk: #030728; --card: #141a45;
+      --ink: #ffffff; --muted: #a9abba; --faint: #6f7391;
+      --line: #2e3352; --hair: #1c2142;
+      --link: #4b89ff; --tint: #12205a;
+      --copper: #ff6b5e; --copper-soft: #3a1414; --good: #45c16a; --idle: #2e3352;
+      --block: #141a45; --block-line: #a9abba; --ours: #4b89ff;
+      --btn2: #ffffff; --btn2-ink: #030728;
+      color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --ground: #0d1218;
-    --panel: #151c24;
-    --sunk: #101720;
-    --ink: #e3eaf1;
-    --muted: #93a2af;
-    --faint: #6b7a88;
-    --line: #27313c;
-    --hair: #1d2530;
-    --copper: #e0913f;
-    --copper-soft: #33241a;
-    --axis: #e173ab;
-    --block: #40566a;
-    --block-line: #8fa8bd;
-    --ours: #e0913f;
-    --good: #5fc08c;
+    --ground: #0b1030; --panel: #0b1030; --sunk: #030728; --card: #141a45;
+    --ink: #ffffff; --muted: #a9abba; --faint: #6f7391;
+    --line: #2e3352; --hair: #1c2142;
+    --link: #4b89ff; --tint: #12205a;
+    --copper: #ff6b5e; --copper-soft: #3a1414; --good: #45c16a; --idle: #2e3352;
+    --block: #141a45; --block-line: #a9abba; --ours: #4b89ff;
+    --btn2: #ffffff; --btn2-ink: #030728;
+    color-scheme: dark;
   }
 
-  body {
-    margin: 0;
-    background: var(--ground);
-    color: var(--ink);
-    font-family: var(--sans);
-    font-size: 14px;
-    line-height: 1.55;
-    -webkit-font-smoothing: antialiased;
-  }
-  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; padding-block: 28px 56px; }
-
-  header { margin-bottom: 22px; }
-  h1 {
-    font-size: clamp(22px, 3.4vw, 30px); font-weight: 600; margin: 0 0 6px;
-    letter-spacing: -0.015em; text-wrap: balance;
-  }
-  .tag {
-    font-family: var(--mono); font-size: 11px; letter-spacing: 0.09em;
-    text-transform: uppercase; color: var(--copper); margin: 0 0 10px;
-  }
-  .lede { margin: 0; color: var(--muted); }
-  .lede + .lede { margin-top: 9px; }
-  .lede b { color: var(--ink); font-weight: 600; }
-  /* 접히는 것 둘 — 개념 설명(제목 아래)과 상세 placement 설정(조작부 안). 펼침표는 직접 그린다. */
-  details > summary { list-style: none; cursor: pointer; user-select: none; }
-  details > summary::-webkit-details-marker { display: none; }
-  details > summary::before { content: "▸"; display: inline-block; width: 12px; font-size: 10px; }
-  details[open] > summary::before { content: "▾"; }
-  .intro {
-    margin-top: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
-  }
-  .intro > summary {
-    padding: 10px 14px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.09em;
-    text-transform: uppercase; color: var(--faint);
-  }
-  .intro > summary:hover, .adv > summary:hover { color: var(--copper); }
-  .intro > .body { padding: 2px 14px 14px; }
-  .adv { flex: 1 1 100%; }
-  .adv > summary {
-    display: inline-block; font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--faint); padding: 2px 0;
-  }
-  .adv > .advrow {
-    display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
-    margin-top: 8px; padding-top: 10px; border-top: 1px dashed var(--hair);
-  }
-
-  /* --- 조작부 --- */
-  .bar {
-    display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
-    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
-    padding: 12px 14px; margin: 20px 0 16px;
-  }
-  .field { display: flex; flex-direction: column; gap: 4px; }
-  .field > span {
-    font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--faint);
-  }
-  select, button {
-    font: inherit; font-size: 13px; color: var(--ink);
-    background: var(--panel); border: 1px solid var(--line);
-    border-radius: 7px; padding: 7px 10px;
-  }
-  select { min-width: 180px; }
-  /* 저울은 눈금이 아니라 **연속**이다 — 면적과 배선 사이 어디든 설 수 있다. */
-  .field.slide { min-width: 172px; }
-  .field.slide > span { display: flex; justify-content: space-between; gap: 8px; }
-  .field.slide b { color: var(--copper); font-weight: 600; font-variant-numeric: tabular-nums; }
-  input[type=range] {
-    width: 100%; margin: 0; height: 30px; accent-color: var(--copper);
-    background: transparent; cursor: ew-resize;
-  }
-  button.run {
-    background: var(--copper); border-color: var(--copper); color: #fff;
-    font-weight: 600; padding: 8px 20px; cursor: pointer;
-  }
-  :root[data-theme="dark"] button.run,
-  :root:not([data-theme="light"]) button.run { color: #16110a; }
-  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) button.run { color: #fff; } }
-  button.run:disabled { opacity: .5; cursor: default; }
-  button:focus-visible, select:focus-visible {
-    outline: 2px solid var(--copper); outline-offset: 2px;
-  }
-  .spacer { flex: 1 1 auto; }
-  .status {
-    font-family: var(--mono); font-size: 12px; color: var(--muted);
-    display: flex; align-items: center; gap: 8px; min-height: 30px;
-  }
-  .dot {
-    width: 7px; height: 7px; border-radius: 50%; background: var(--copper);
-    animation: pulse 1.1s ease-in-out infinite;
-  }
-  @keyframes pulse { 0%,100% { opacity: .25 } 50% { opacity: 1 } }
-  @media (prefers-reduced-motion: reduce) { .dot { animation: none; opacity: .8 } }
-
-  /* --- 본문 2단 --- */
-  .cols { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; }
-  @media (max-width: 860px) { .cols { grid-template-columns: minmax(0, 1fr); } }
-
-  .card {
-    background: var(--panel); border: 1px solid var(--line);
-    border-radius: 10px; overflow: hidden;
-  }
-  .card > h2 {
-    font-size: 11px; font-family: var(--mono); letter-spacing: 0.09em;
-    text-transform: uppercase; color: var(--faint); font-weight: 500;
-    margin: 0; padding: 11px 14px 9px; border-bottom: 1px solid var(--hair);
-  }
-  .card > .body { padding: 14px; }
-  .cols > div > .card + .card { margin-top: 16px; }
-  /* 접는 카드 — 제목을 클릭하면 접힌다. 편집 모드에서는 편집 카드 말고 전부 접힌 채 시작한다 */
-  .card.fold > h2 { cursor: pointer; user-select: none; position: relative; padding-right: 30px; }
-  .card.fold > h2::after {
-    content: ""; position: absolute; right: 15px; top: 11px; width: 6px; height: 6px;
-    border-right: 1.5px solid var(--faint); border-bottom: 1.5px solid var(--faint);
-    transform: rotate(45deg); transition: transform 0.12s;
-  }
-  .card.fold.collapsed > h2 { border-bottom: none; }
-  .card.fold.collapsed > h2::after { transform: rotate(-45deg); top: 13px; }
-  .card.fold.collapsed > :not(h2) { display: none; }
-
-  canvas {
-    display: block; width: 100%; background: var(--sunk);
-    cursor: grab; touch-action: none;
-  }
-  canvas.dragging { cursor: grabbing; }
-  .viewbar {
-    display: flex; gap: 2px; align-items: center; margin-left: auto;
-  }
-  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
-  .seg button {
-    border: 0; border-radius: 0; padding: 5px 11px; font-size: 12px;
-    background: var(--panel); color: var(--muted); cursor: pointer;
-    white-space: nowrap;
-  }
-  .seg button + button { border-left: 1px solid var(--line); }
-  .seg button[aria-pressed="true"] { background: var(--copper-soft); color: var(--copper); font-weight: 600; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--ground); color: var(--ink); font: 13px/1.45 var(--sans); }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  small { font-size: 12px; color: var(--muted); }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   [hidden] { display: none !important; }
-  .layers {
-    display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center;
-    padding: 9px 14px; border-top: 1px solid var(--hair);
-  }
-  .lay {
-    display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
-    border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px 3px 6px;
-    font-family: var(--mono); font-size: 11px; color: var(--muted);
-    background: var(--panel); user-select: none;
-  }
-  .lay input { appearance: none; margin: 0; width: 9px; height: 9px; border-radius: 2px;
-               border: 1px solid var(--line); background: var(--sunk); }
-  .lay input:checked { background: currentColor; border-color: currentColor; }
-  .lay[data-on="1"] { color: var(--ink); border-color: var(--faint); }
-  .lay input:focus-visible { outline: 2px solid var(--copper); outline-offset: 1px; }
-  .drop {
-    border: 1px dashed var(--line); border-radius: 8px; padding: 10px 12px;
-    font-size: 12px; color: var(--muted); cursor: pointer; background: var(--panel);
-    display: flex; align-items: center; gap: 8px; min-height: 34px;
-  }
-  .drop.over { border-color: var(--copper); color: var(--copper); background: var(--copper-soft); }
-  .drop input { display: none; }
-  .dl { display: flex; flex-wrap: wrap; gap: 6px; }
-  .dl a {
-    display: inline-flex; align-items: center; gap: 6px;
-    border: 1px solid var(--line); border-radius: 7px; padding: 6px 11px;
-    font-family: var(--mono); font-size: 11.5px; color: var(--ink);
-    text-decoration: none; background: var(--panel);
-  }
-  .dl a:hover, a.mini:hover { border-color: var(--copper); color: var(--copper); }
-  a.mini {
-    align-self: center; border: 1px dashed var(--line); border-radius: 7px;
-    padding: 6px 11px; font-family: var(--mono); font-size: 11.5px;
-    color: var(--muted); text-decoration: none; background: var(--panel);
-  }
-  .dl a span { color: var(--faint); }
-  .errlist {
-    font-family: var(--mono); font-size: 11px; color: var(--muted);
-    max-height: 190px; overflow: auto; margin: 0;
-  }
-  .errlist li { padding: 4px 0; border-top: 1px solid var(--hair); line-height: 1.45; }
-  .errlist li:first-child { border-top: 0; }
-  .errlist b { color: var(--copper); font-weight: 600; }
-  .card > h2.withbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding-right: 10px; }
-  .card > h2.withbar > span:first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-  .cap {
-    display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center;
-    padding: 9px 14px; border-top: 1px solid var(--hair);
-    font-family: var(--mono); font-size: 11px; color: var(--muted);
-  }
-  .key { display: inline-flex; align-items: center; gap: 5px; }
-  .sw { width: 14px; height: 9px; border-radius: 2px; border: 1px solid var(--block-line); background: var(--block); }
-  .sw.ours { background: transparent; border: 1.5px solid var(--ours); }
-  .sw.ax { width: 2px; height: 12px; border: 0; border-radius: 0; background: var(--axis); }
-  .sw.leaf { background: var(--copper-soft); border-color: var(--copper); }
-  .sw.mod { background: transparent; border: 1px dashed var(--faint); }
-  .sw.rail { width: 14px; height: 0; border: 0; border-top: 2px solid var(--copper); border-radius: 0; }
-  .hint { color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 46%; }
-  /* --- 편집 (edit.mjs 가 카드를 채운다) --- */
+
+  /* ---- 뼈대: 페이지 스크롤과 각 열의 스크롤을 나눈다 ---- */
+  .app { height: 100vh; min-height: 640px; display: flex; flex-direction: column; overflow: auto; }
+  .top { height: 37px; flex: 0 0 auto; display: flex; align-items: center; gap: 20px; padding: 0 16px;
+         border-bottom: 1px solid var(--line); background: var(--panel); }
+  .top h1 { margin: 0; font-size: 13px; font-weight: 600; }
+  .top .sp { flex: 1; }
+  .top a { color: var(--muted); text-decoration: none; }
+  .cols { flex: 1 1 auto; min-height: 0; display: flex; overflow: hidden; }
+
+  /* ---- 왼쪽: 회로 목록 ---- */
+  .left { flex: 0 0 248px; height: 100%; display: flex; flex-direction: column; border-right: 1px solid var(--hair); background: var(--panel); }
+  .left-head { padding: 16px 16px 8px; display: flex; align-items: center; justify-content: space-between; }
+  .left-head h2 { margin: 0; font-size: 13px; font-weight: 600; }
+  .search { margin: 0 16px 8px; display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border: 1px solid var(--line); border-radius: 4px; }
+  .search input { border: 0; outline: none; flex: 1; min-width: 0; background: transparent; }
+  .proj-list { flex: 1 1 0; min-height: 0; overflow-y: auto; padding: 0 8px 8px; display: flex; flex-direction: column; gap: 2px;
+               scrollbar-width: thin; scrollbar-color: transparent transparent; scrollbar-gutter: stable; }
+  .proj-list:hover, .proj-list:focus-within { scrollbar-color: rgba(138,143,152,.6) transparent; }
+  .proj-list::-webkit-scrollbar { width: 8px; }
+  .proj-list::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; }
+  .proj-list:hover::-webkit-scrollbar-thumb, .proj-list:focus-within::-webkit-scrollbar-thumb { background: rgba(138,143,152,.6); }
+  .group-label { padding: 8px 8px 4px; font-size: 12px; color: var(--muted); }
+  .proj { text-align: left; width: 100%; border: 0; border-radius: 4px; padding: 8px 10px; background: transparent; display: flex; flex-direction: column; gap: 2px; }
+  .proj:hover { background: var(--card); }
+  .proj[aria-current="true"] { background: var(--tint); font-weight: 600; }
+  .proj .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .proj .st { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 400; color: var(--muted); }
+  .proj .st i { width: 6px; height: 6px; border-radius: 3px; background: var(--idle); }
+  .left-foot { flex: 0 0 auto; padding: 12px 16px 16px; border-top: 1px solid var(--hair); }
+  .drop { width: 100%; min-height: 36px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 10px;
+          border: 1px dashed var(--link); border-radius: 4px; background: var(--tint); color: var(--link); font-weight: 500; cursor: pointer; text-align: center; }
+  .drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .drop.over { border-style: solid; background: var(--card); }
+  .left-foot p { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+  /* 검사(test/*.mjs)가 #ex 를 고른다 — 보이는 상자는 없지만 자리는 남겨 둔다 */
+  #ex { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+  /* ---- 가운데: 탭 · 캔버스 · 상태 줄 ---- */
+  .center { flex: 1 1 auto; min-width: 0; height: 100%; display: flex; flex-direction: column; }
+  .toolbar { min-height: 40px; display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px 16px; padding: 0 12px 0 8px; border-bottom: 1px solid var(--hair); }
+  .tabs { display: flex; align-items: stretch; }
+  .tabs button { padding: 0 10px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .tabs button[aria-pressed="true"] { border-bottom-color: var(--accent); color: var(--ink); }
+  .tabs .note { font-size: 12px; color: var(--muted); }
+  .tabs .note.live { color: var(--link); }
+  .tools { margin-left: auto; display: flex; align-items: center; gap: 8px; position: relative; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+  .seg button { height: 26px; padding: 0 10px; border: 0; background: var(--panel); }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button[aria-pressed="true"] { background: var(--hair); }
+  .seg button:disabled { color: var(--faint); }
+  .btn { height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); }
+  button.run { height: 28px; padding: 0 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); font-weight: 500; }
+  button.run.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  button.run:disabled { background: var(--panel); border-color: var(--hair); color: var(--faint); }
+  .adv > summary { list-style: none; height: 28px; display: flex; align-items: center; padding: 0 10px; border: 1px solid var(--line); border-radius: 4px; cursor: pointer; user-select: none; }
+  .adv > summary::-webkit-details-marker { display: none; }
+  .adv[open] > summary { background: var(--hair); }
+  .advrow { position: absolute; top: 36px; right: 0; z-index: 5; width: 300px; padding: 12px; display: flex; flex-direction: column; gap: 12px;
+            background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
+  .field { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--muted); }
+  .field select { height: 28px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); }
+  .field.slide { flex-direction: column; align-items: stretch; gap: 4px; }
+  .field.slide span { display: flex; justify-content: space-between; }
+  .field b { color: var(--ink); font-weight: 500; }
+  input[type="range"] { accent-color: var(--accent); margin: 0; }
+
+  .stage { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; background: var(--sunk); }
+  canvas { display: block; background: var(--sunk); cursor: grab; touch-action: none; }
+  canvas.dragging { cursor: grabbing; }
   canvas.editing { cursor: default; }
-  .editrow { display: flex; gap: 10px; padding: 7px 0; border-top: 1px solid var(--hair); font-size: 12.5px; line-height: 1.5; }
-  .editrow:first-child { border-top: 0; padding-top: 0; }
-  .editrow > .lab { flex: 0 0 60px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--faint); padding-top: 4px; }
-  .editrow > span:last-child { flex: 1 1 auto; min-width: 0; }
-  .editrow button, .editrow select { font-size: 12px; padding: 4px 8px; }
-  .editrow button.run { padding: 5px 12px; }
-  .editrow table.rank { width: auto; font-size: 11px; }
-  .editrow table.rank th, .editrow table.rank td { padding: 3px 8px; }
-  .editrow.help { color: var(--faint); font-size: 11.5px; }
-  td.dim small, td small { color: var(--faint); }
+  .cap { position: absolute; left: 12px; bottom: 12px; display: flex; flex-wrap: wrap; gap: 4px 12px; max-width: calc(100% - 24px);
+         padding: 4px 8px; background: var(--panel); border: 1px solid var(--hair); border-radius: 4px; font-size: 12px; color: var(--muted); }
+  .cap:not(:has(.key:not([hidden]))) { display: none; }
+  .key { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 14px; height: 10px; border-radius: 2px; border: 1px solid var(--block-line); background: var(--block); }
+  .sw.ax { width: 0; height: 12px; border: 0; border-left: 2px dashed var(--axis); border-radius: 0; background: transparent; }
+  .sw.leaf { background: var(--panel); border-color: var(--ink); }
+  .sw.mod { background: transparent; border: 1px dashed var(--faint); }
+  .sw.rail { height: 0; border: 0; border-top: 2px solid var(--ink); border-radius: 0; }
+  .statusbar { height: 28px; flex: 0 0 auto; display: flex; align-items: center; gap: 16px; padding: 0 12px; border-top: 1px solid var(--line);
+               font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .status { display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; color: var(--ink); }
+  .status > span { overflow: hidden; text-overflow: ellipsis; }
+  .hint { color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .statusbar .help { margin-left: auto; }
+  .dot { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 1.1s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+  @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
 
-  /* --- 지표 --- */
-  .metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--hair); }
-  .m { background: var(--panel); padding: 11px 14px; }
-  .m dt {
-    font-family: var(--mono); font-size: 10px; letter-spacing: 0.07em;
-    text-transform: uppercase; color: var(--faint); margin: 0 0 2px;
-  }
-  .m dd {
-    margin: 0; font-family: var(--mono); font-size: 17px; font-weight: 500;
-    font-variant-numeric: tabular-nums;
-  }
-  .m dd small { font-size: 11px; color: var(--muted); font-weight: 400; }
-  .m dd.win { color: var(--good); }
-  .m dd.lose { color: var(--copper); }
-
-  /* --- 표 --- */
-  .tw { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; font-family: var(--mono); font-size: 11.5px; }
-  th, td { text-align: left; padding: 6px 14px; white-space: nowrap; }
-  thead th {
-    font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase;
-    color: var(--faint); font-weight: 500; border-bottom: 1px solid var(--hair);
-  }
-  tbody tr + tr td { border-top: 1px solid var(--hair); }
+  /* ---- 오른쪽: 속성 패널 ---- */
+  .right { flex: 0 0 300px; height: 100%; overflow-y: auto; border-left: 1px solid var(--line); padding-bottom: 64px; background: var(--panel); }
+  .sec { padding: 12px 16px; border-bottom: 1px solid var(--hair); }
+  .sec > h2 { margin: 0 0 6px; font-size: 12px; font-weight: 500; color: var(--muted); }
+  .sec.edit { background: var(--tint); }
+  .sec .body { padding: 0; }
+  dl.metrics { margin: 0; }
+  dl.metrics .m { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
+  dl.metrics dt { color: var(--muted); }
+  dl.metrics dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+  .win { color: var(--good); }
+  .lose { color: var(--copper); }
+  .tw { overflow-x: auto; margin: 0 -4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+  th { text-align: left; font-weight: 500; color: var(--muted); padding: 4px; border-bottom: 1px solid var(--hair); }
+  td { padding: 4px; border-bottom: 1px solid var(--hair); vertical-align: top; }
   td.inst { color: var(--ink); }
-  td.dim { color: var(--muted); font-variant-numeric: tabular-nums; }
-  .same { color: var(--good); }
-  .diff { color: var(--copper); }
-  .flip { letter-spacing: 0.1em; }
+  .dim { color: var(--muted); }
+  .flip { font-family: var(--mono); }
+  .errlist { margin: 6px 0 0; padding: 0; list-style: none; font-size: 12px; color: var(--muted); max-height: 220px; overflow: auto; }
+  .errlist li { padding: 6px 0; border-top: 1px solid var(--hair); }
+  .errlist b { color: var(--ink); font-weight: 500; }
+  .dl { display: flex; flex-direction: column; gap: 6px; }
+  .dl a { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 4px; color: var(--ink); text-decoration: none; }
+  .dl a:first-child[download$=".gds"] { background: var(--btn2); border-color: var(--btn2); color: var(--btn2-ink); }
+  .dl a span { margin-left: auto; font-size: 12px; opacity: .7; }
+  .dl > span { font-size: 12px; color: var(--muted); }
+  .mini { display: flex; align-items: center; height: 30px; padding: 0 10px; margin-top: 6px; border: 1px solid var(--line); border-radius: 4px; color: var(--ink); text-decoration: none; }
+  .layers { display: flex; flex-direction: column; gap: 2px; }
+  #layerCard:has(#layerBar[hidden]) { display: none; }
+  .lay { display: flex; align-items: center; gap: 8px; padding: 2px 0; color: var(--muted); cursor: pointer; }
+  .lay[data-on="1"] { color: var(--ink); }
+  .lay input { margin: 0; accent-color: var(--accent); }
+  /* 편집기(edit.mjs)가 그리는 줄 */
+  .editrow { display: flex; gap: 10px; padding: 6px 0; border-top: 1px solid var(--hair); font-size: 12px; line-height: 1.5; }
+  .editrow .lab { flex: 0 0 64px; color: var(--muted); }
+  .editrow button { height: 26px; padding: 0 8px; margin: 2px 2px 2px 0; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); }
+  .editrow button.run { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .editrow select { height: 26px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); }
+  .editrow.help { color: var(--muted); }
+  table.rank { width: auto; }
+  .selhead { display: flex; justify-content: space-between; align-items: baseline; }
+  .selhead button { padding: 0; border: 0; background: transparent; color: var(--link); font-size: 12px; }
 
-  code { font-family: var(--mono); font-size: 12px; background: var(--sunk); padding: 1px 5px; border-radius: 4px; }
-  footer {
-    margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--line);
-    font-family: var(--mono); font-size: 11px; color: var(--faint);
+  .theme { position: fixed; right: 16px; bottom: 16px; z-index: 10; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+           border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--ink); }
+
+  @media (max-width: 900px) {
+    .app { height: auto; overflow: visible; }
+    .cols { flex-direction: column; overflow: visible; }
+    .left, .right { flex: none; width: auto; height: auto; max-height: 50vh; }
+    .center { height: 80vh; }
   }
 </style>
-
-<div class="wrap">
-  <header>
+</head>
+<body>
+<div class="app">
+  <header class="top">
     <h1>Analog Layout Generator</h1>
-    <details class="intro" id="intro">
-      <summary>개념 설명</summary>
-      <div class="body">
-        <p class="lede">
-          아날로그 회로의 넷리스트(<code>.sp</code>)를 넣으면 <b>칩 레이아웃(GDS)</b>을 만들어 준다.
-          회로 읽기 · placement · routing · 검사 · GDS 내보내기까지 <b>전부 이 브라우저 탭 안에서</b> 돈다 —
-          서버도, 설치도 없다.
-        </p>
-        <p class="lede">
-          넷리스트에서 차동쌍·전류 거울 같은 소자 묶음(primitive)을 찾아 트랜지스터 모양을 만들고, 짝을 이뤄야 하는
-          소자는 <b>좌우 대칭</b>으로 두면서 면적과 선 길이가 작아지게 놓는다(placement). 그다음 신호선과
-          전원망(VDD·GND)을 금속층에 잇고(routing), 설계 규칙(DRC)과 회로 연결(LVS)을 검사해 GDS 파일로
-          내보낸다 — KLayout 에서 열린다.
-        </p>
-        <p class="lede">
-          오픈소스 아날로그 레이아웃 도구 <b>ALIGN</b> 과 같은 공정 규칙(FinFET 14 nm 모의 PDK)을 쓰고, router 는
-          ALIGN 의 routing 알고리즘을 그대로 옮긴 것이다. ALIGN 의 예제 회로들이 들어 있다.
-        </p>
-        <p class="lede">
-          그림은 흐름 순서대로 넷이다. <b>Schematic</b> 은 넷리스트 그대로, <b>Primitives</b> 는 앞단이 소자를 묶은
-          블록(placement 의 입력), <b>Placement</b> 는 블록을 놓은 결과, <b>Routing</b> 은 금속층에 이은 결과다.
-        </p>
-      </div>
-    </details>
+    <span class="sp"></span>
+    <a href="https://github.com/gotzawal/chip">GitHub</a>
   </header>
-
-  <div class="bar">
-    <label class="drop" id="drop" title="회로 넷리스트(.sp)를 올린다 — 앞단부터 브라우저에서 돌린다">
-      <input type="file" id="file" multiple accept=".sp,.cir,.json">
-      <span id="dropText">회로 올리기 — .sp 넷리스트 또는 앞단 출력</span>
-    </label>
-    <a class="mini" id="saveEx" hidden
-       title="올린 설계의 앞단 출력을 한 파일로 내려받는다.
-data/ 에 넣고 data/index.json 에 {name, label} 한 줄을 더하면 예제 목록에 뜬다.">예제로 저장</a>
-    <label class="field"><span>회로</span>
-      <select id="ex"></select>
-    </label>
-    <button class="run" id="run">Placement 실행</button>
-    <button class="run" id="routeRun" disabled
-            title="Placement 뒤 이 탭에서 routing 한다 — ALIGN 의 router 를 Rust 로 옮긴 것(wasm). 검사는 ALIGN 과 같은 DRC/LVS">Routing 실행</button>
-    <div class="spacer"></div>
-    <div class="status" id="status"></div>
-    <details class="adv" id="adv">
-      <summary title="시작점 예산과 저울 둘, WebGPU 의 설정당 시작점. 기본값으로도 된다">상세 placement 설정</summary>
-      <div class="advrow">
-        <label class="field"
-               title="총 시작점 예산. 설정(variant 배정 x 영역 후보) 수가 하한이라,
-설정이 많은 계층 설계에서는 주로 **넓이**로 쓰인다 — 배정을 몇 개까지 훑을지가
-같이 늘어난다. 남는 예산은 점수 상위 설정에 라운드로 더 준다."><span>시작점</span>
-          <select id="batch">
-            <option value="48">48 — 빠르게</option>
-            <option value="96" selected>96 — 기본</option>
-            <option value="288">288 — 넓게</option>
-          </select>
-        </label>
-        <label class="field slide"
-               title="고를 때의 저울. 후보 점수 = log(면적) + w x log(HPWL) — ALIGN placer 의
-비용과 같은 꼴이고, w = 1 이 ALIGN 의 LAMBDA 다. 면적 10% 와 선 길이 10% 가 같은 값이다.
-HPWL 은 핀 경계 사각형으로 잰다 (ALIGN 의 HPWL_extend). 다음 placement 부터 먹는다.">
-          <span>면적 ↔ 선 길이 <b id="hwVal">1 : 1.00</b></span>
-          <input type="range" id="hw" min="-40" max="40" step="1" value="0">
-        </label>
-        <label class="field" id="gpuField" hidden
-               title="WebGPU 가 있으면 연속 단계(Adam)를 GPU 에서 돈다. 그때 시작점은 총 예산이
-아니라 설정(variant 배정 x 영역)마다 이만큼이다. 시작점 96 짜리 CPU 예산은 설정당
-1~4 개였다 — 배정 하나의 점수가 표본 서너 개로 정해져 순위가 잡음 안에 있었다.">
-          <span>GPU 시작점/설정</span>
-          <select id="perConfig">
-            <option value="8">8</option>
-            <option value="32" selected>32</option>
-            <option value="128">128</option>
-          </select>
-        </label>
-        <label class="field slide"
-               title="연속 단계의 저울. 시작점에서 밀도(퍼뜨리는 힘)의 기울기를
-선 길이(당기는 힘)의 몇 배로 둘지다 (calibrate 의 lamRatio). 낮추면 넷이 더 세게
-당겨 선이 짧고 겹침이 많이 남고, 높이면 퍼뜨려 겹침이 적게 남는다.
-겹침은 legalize 가 어차피 0 으로 만든다 — 얼마나 무른 유체로 둘 것인가의 문제다.
-five_transistor_ota 실측: 0.25 -> 겹침 0.216, 1 -> 0.160, 4 -> 0.111.">
-          <span>선 길이 ↔ 퍼뜨리기 <b id="lamVal">1.00×</b></span>
-          <input type="range" id="lam" min="-20" max="20" step="1" value="0">
-        </label>
-      </div>
-    </details>
-  </div>
+  <!-- 개념 설명: 화면에는 표기하지 않는다. 다시 보이려면 hidden 을 빼면 된다. -->
+  <details class="intro" id="intro" hidden>
+    <summary>개념 설명</summary>
+    <div class="body">
+      <p>아날로그 회로의 넷리스트(<code>.sp</code>)를 넣으면 칩 레이아웃(GDS)을 만들어 준다. 회로 읽기 · placement · routing · 검사 · GDS 내보내기까지 전부 이 브라우저 탭 안에서 돈다.</p>
+      <p>넷리스트에서 차동쌍·전류 거울 같은 소자 묶음(primitive)을 찾아 트랜지스터 모양을 만들고, 짝을 이뤄야 하는 소자는 좌우 대칭으로 두면서 면적과 선 길이가 작아지게 놓는다. 그다음 신호선과 전원망을 금속층에 잇고, DRC와 LVS를 검사해 GDS로 내보낸다.</p>
+      <p>ALIGN 과 같은 공정 규칙(FinFET 14 nm 모의 PDK)을 쓰고, router 는 ALIGN 의 routing 알고리즘을 옮긴 것이다.</p>
+    </div>
+  </details>
 
   <div class="cols" id="cols">
-    <div>
-      <div class="card">
-        <h2 class="withbar">
-          <span id="cvTitle">Placement</span>
-          <span class="viewbar">
-            <span class="seg" id="whatSeg" title="Schematic(넷리스트 그대로) → Primitives(앞단이 묶은 블록, placement 이전) → Placement → Routing">
-              <button data-what="schem" aria-pressed="false">Schematic</button>
-              <button data-what="group" aria-pressed="false">Primitives</button>
-              <button data-what="place" aria-pressed="true">Placement</button>
-              <button data-what="route" aria-pressed="false">Routing</button>
-            </span>
-            <span class="seg" id="modeSeg" hidden style="margin-left:6px"
-                  title="편집: 블록을 끌어 옮기고 뒤집고 variant 를 바꾼다 — 편집이 없으면 배치기·배선기가 낸 그대로다">
-              <button data-mode="view" aria-pressed="true">보기</button>
-              <button data-mode="edit" aria-pressed="false" disabled>편집</button>
-            </span>
+    <nav class="left" aria-label="회로">
+      <div class="left-head"><h2>프로젝트</h2><span class="dim" id="projCount"></span></div>
+      <label class="search"><span class="sr-only">회로 찾기</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <input id="projSearch" type="search" placeholder="회로 찾기">
+      </label>
+      <select id="ex" tabindex="-1" aria-hidden="true"></select>
+      <div class="proj-list" id="projList"></div>
+      <div class="left-foot">
+        <label class="drop" id="drop" title="회로 넷리스트(.sp)를 올린다 — 앞단부터 브라우저에서 돌린다">
+          <input type="file" id="file" multiple accept=".sp,.cir,.json">
+          <span id="dropText">회로 올리기</span>
+        </label>
+        <p>.sp 넷리스트나 앞단 출력(.json)을 끌어다 놓아도 됩니다</p>
+      </div>
+    </nav>
+
+    <main class="center">
+      <div class="toolbar">
+        <span class="sr-only" id="cvTitle">Placement</span>
+        <div class="tabs" id="whatSeg" title="Schematic(넷리스트 그대로) → Primitives(앞단이 묶은 블록, placement 이전) → Placement → Routing">
+          <button data-what="schem" aria-pressed="false">Schematic</button>
+          <button data-what="group" aria-pressed="false">Primitives</button>
+          <button data-what="place" aria-pressed="true">Placement <span class="note" data-note="place"></span></button>
+          <button data-what="route" aria-pressed="false">Routing <span class="note" data-note="route"></span></button>
+        </div>
+        <div class="tools">
+          <span class="seg" id="modeSeg" hidden
+                title="편집: 블록을 끌어 옮기고 뒤집고 variant 를 바꾼다 — 편집이 없으면 배치기·배선기가 낸 그대로다">
+            <button data-mode="view" aria-pressed="true">보기</button>
+            <button data-mode="edit" aria-pressed="false" disabled>편집</button>
           </span>
-        </h2>
+          <details class="adv" id="adv">
+            <summary title="시작점 예산과 저울 둘, WebGPU 의 설정당 시작점. 기본값으로도 된다">실행 설정</summary>
+            <div class="advrow">
+              <label class="field"
+                     title="총 시작점 예산. 설정(variant 배정 x 영역 후보) 수가 하한이라,
+설정이 많은 계층 설계에서는 주로 **넓이**로 쓰인다 — 배정을 몇 개까지 훑을지가
+같이 늘어난다. 남는 예산은 점수 상위 설정에 라운드로 더 준다."><span>시작점</span>
+                <select id="batch">
+                  <option value="48">48 — 빠르게</option>
+                  <option value="96" selected>96 — 기본</option>
+                  <option value="288">288 — 넓게</option>
+                </select>
+              </label>
+              <label class="field slide"
+                     title="고를 때의 저울. 후보 점수 = log(면적) + w x log(HPWL) — ALIGN placer 의
+비용과 같은 꼴이고, w = 1 이 ALIGN 의 LAMBDA 다. 면적 10% 와 선 길이 10% 가 같은 값이다.
+HPWL 은 핀 경계 사각형으로 잰다 (ALIGN 의 HPWL_extend). 다음 placement 부터 먹는다.">
+                <span>면적 ↔ 선 길이 <b id="hwVal">1 : 1.00</b></span>
+                <input type="range" id="hw" min="-40" max="40" step="1" value="0">
+              </label>
+              <label class="field" id="gpuField" hidden
+                     title="WebGPU 가 있으면 연속 단계(Adam)를 GPU 에서 돈다. 그때 시작점은 총 예산이
+아니라 설정(variant 배정 x 영역)마다 이만큼이다.">
+                <span>GPU 시작점/설정</span>
+                <select id="perConfig">
+                  <option value="8">8</option>
+                  <option value="32" selected>32</option>
+                  <option value="128">128</option>
+                </select>
+              </label>
+              <label class="field slide"
+                     title="연속 단계의 저울. 시작점에서 밀도(퍼뜨리는 힘)의 기울기를
+선 길이(당기는 힘)의 몇 배로 둘지다 (calibrate 의 lamRatio). 낮추면 넷이 더 세게
+당겨 선이 짧고 겹침이 많이 남고, 높이면 퍼뜨려 겹침이 적게 남는다.">
+                <span>선 길이 ↔ 퍼뜨리기 <b id="lamVal">1.00×</b></span>
+                <input type="range" id="lam" min="-20" max="20" step="1" value="0">
+              </label>
+            </div>
+          </details>
+          <button class="run primary" id="run">Placement 실행</button>
+          <button class="run" id="routeRun" disabled
+                  title="Placement 뒤 이 탭에서 routing 한다 — ALIGN 의 router 를 Rust 로 옮긴 것(wasm). 검사는 ALIGN 과 같은 DRC/LVS">Routing 실행</button>
+        </div>
+      </div>
+
+      <div class="stage" id="stage">
         <canvas id="cv" width="800" height="560"></canvas>
-        <div class="layers" id="layerBar" hidden></div>
         <div class="cap">
           <span class="key" data-for="place"><span class="sw"></span> 블록</span>
           <span class="key" data-for="place group"><span class="sw ax"></span> 대칭축</span>
           <span class="key" data-for="group"><span class="sw leaf"></span> 앞단이 묶은 소자</span>
           <span class="key" data-for="group schem"><span class="sw mod"></span> 모듈(서브서킷)</span>
           <span class="key" data-for="schem group"><span class="sw rail"></span> 전원 · 접지</span>
-          <span id="bbox"></span>
-          <span id="hint" class="hint"></span>
-          <span id="zoom" style="margin-left:auto"></span>
-          <span style="color:var(--faint)">휠 확대 · 끌어 이동 · 더블클릭 초기화</span>
         </div>
       </div>
-      <div class="card fold collapsed" id="variantCard">
+
+      <div class="statusbar">
+        <div class="status" id="status"></div>
+        <span id="bbox"></span>
+        <span id="hint" class="hint"></span>
+        <span id="zoom"></span>
+        <span class="help">휠 확대 · 끌어 이동 · 더블클릭 초기화</span>
+      </div>
+    </main>
+
+    <aside class="right" aria-label="속성">
+      <section class="sec edit" id="editCard" hidden>
+        <h2 title="배치를 손으로 고친다. 끌기는 제약을 따라 움직이고(거울 쌍은 거울로, 축 위 블록은 축을 따라), 정리는 사용자가
+정한 위상(쌍의 상대 위치)을 그대로 둔 채 겹침을 없애고 격자에 앉힌다. 편집이 없으면 지금 그대로다.">편집</h2>
+        <div class="body" id="editBody"></div>
+      </section>
+      <section class="sec" id="selCard" hidden>
+        <div class="selhead"><h2 id="selName" style="margin:0;font-size:15px;font-weight:500;color:var(--ink)"></h2><button type="button" id="selClose">설계 요약으로</button></div>
+        <div class="dim" id="selKind" style="font-size:12px"></div>
+        <dl class="metrics" id="selRows" style="margin-top:8px"></dl>
+      </section>
+      <section class="sec" id="resultCard">
+        <h2>결과</h2>
+        <dl class="metrics" id="metrics"></dl>
+      </section>
+      <section class="sec" id="infoCard">
+        <h2>설계</h2>
+        <div class="body"><dl class="metrics" id="info"></dl></div>
+      </section>
+      <section class="sec" id="drcCard">
+        <h2>Routing · GDS · DRC</h2>
+        <dl class="metrics" id="drcMetrics"></dl>
+        <div class="body" id="drcErrs"></div>
+      </section>
+      <section class="sec" id="layerCard">
+        <h2>레이어</h2>
+        <div class="layers" id="layerBar" hidden></div>
+      </section>
+      <section class="sec" id="variantCard">
         <h2>소자 variant — 고른 것</h2>
         <div class="tw"><table>
           <thead><tr><th>인스턴스</th><th>variant</th><th>크기</th><th>반전</th></tr></thead>
           <tbody id="vt"><tr><td colspan="4" class="dim">Placement 를 실행하면 채워집니다</td></tr></tbody>
         </table></div>
-      </div>
-      <div class="card fold collapsed" id="blockCard">
+      </section>
+      <section class="sec" id="blockCard">
         <h2 title="앞단(1_topology)이 넷리스트의 소자를 묶어 만든 블록 — placer 는 이 블록을 놓는다.
-variant 후보는 2_primitives 가 같은 블록을 다른 종횡비로 만들어 둔 것이다.">Primitives — 앞단이 만든 블록 (placement 이전)</h2>
+variant 후보는 2_primitives 가 같은 블록을 다른 종횡비로 만들어 둔 것이다.">Primitives — 앞단이 만든 블록</h2>
         <div class="tw"><table>
           <thead><tr><th>블록</th><th>종류</th><th>소자</th><th>variant 후보</th><th>제약</th></tr></thead>
           <tbody id="bt"><tr><td colspan="5" class="dim">회로를 고르면 채워집니다</td></tr></tbody>
         </table></div>
-      </div>
-    </div>
-
-    <div>
-      <div class="card fold collapsed" id="resultCard">
-        <h2>결과</h2>
-        <dl class="metrics" id="metrics"></dl>
-      </div>
-      <div class="card" id="editCard" hidden>
-        <h2 title="배치를 손으로 고친다. 끌기는 제약을 따라 움직이고(거울 쌍은 거울로, 축 위 블록은 축을 따라), 정리는 사용자가
-정한 위상(쌍의 상대 위치)을 그대로 둔 채 겹침을 없애고 격자에 앉힌다. 편집이 없으면 지금 그대로다.">편집</h2>
-        <div class="body" id="editBody"></div>
-      </div>
-      <div class="card fold collapsed" id="infoCard">
-        <h2>설계</h2>
-        <div class="body"><dl class="metrics" id="info" style="margin:-14px"></dl></div>
-      </div>
-      <div class="card fold collapsed" id="drcCard">
-        <h2>Routing · GDS · DRC</h2>
-        <dl class="metrics" id="drcMetrics"></dl>
-        <div class="body" id="drcErrs" style="border-top:1px solid var(--hair)"></div>
-        <div class="body" style="border-top:1px solid var(--hair)">
-          <div class="dl" id="dlBar"></div>
-        </div>
-      </div>
-      <div class="card fold collapsed" id="subCard" hidden>
+      </section>
+      <section class="sec" id="subCard" hidden>
         <h2>하위 모듈이 올린 모양</h2>
         <div class="tw"><table>
           <thead><tr><th>모듈</th><th>쓴 것</th><th>올린 후보</th></tr></thead>
           <tbody id="st"></tbody>
         </table></div>
-      </div>
-    </div>
+      </section>
+      <section class="sec">
+        <h2>내려받기</h2>
+        <div class="dl" id="dlBar"></div>
+        <a class="mini" id="saveEx" hidden
+           title="올린 설계의 앞단 출력을 한 파일로 내려받는다.
+data/ 에 넣고 data/index.json 에 {name, label} 한 줄을 더하면 예제 목록에 뜬다.">앞단 출력을 예제로 저장</a>
+      </section>
+    </aside>
   </div>
-
 </div>
+<button type="button" class="theme" id="themeBtn"></button>
 
 <script type="module">
 // 예제 목록은 **data/index.json 에서 읽는다.** 예제를 더 넣으려면
@@ -613,6 +514,8 @@ function frameBox(items) {
 function layout() {
   const full = Math.max(280, Math.round(
     (cv.parentElement?.clientWidth || cv.getBoundingClientRect().width)));
+  // 가운데 영역 높이에 맞춘다 — 캔버스 위에서는 휠이 확대라 영역 안에서 스크롤할 수 없다
+  const avail = Math.max(240, Math.round(cv.parentElement?.clientHeight || window.innerHeight * 0.7));
   const items = shots();
   const n = items.length;
   const box = frameBox(items);
@@ -622,14 +525,13 @@ function layout() {
   // 좌우를 꽉 채우게 높이가 비율대로 따라간다 — 창 높이의 1.4 배까지. 그보다 세로로 긴 설계(telescopic_ota 는
   // 1440 x 12768)는 그 높이 안에 다 보이게 맞춘다 (좌우가 남는다 — 휠로 확대해 본다).
   const fillWide = what === "place" || what === "route";
-  const cap = fillWide ? Math.max(700, Math.round(window.innerHeight * 1.4))
-                       : Math.max(360, Math.min(820, Math.round(window.innerHeight * 0.78)));
+  const cap = avail;
   const pad = 24;                                  // fitOf 가 두는 여백
   const gap = n > 1 ? 1 : 0;
   const per = (full - gap) / n;
   // 회로도는 옆으로 긴 것이 많다 — 얇은 띠가 되지 않게 아래로 여유를 둔다 (휠로 확대해 본다)
   const minH = what === "schem" || what === "group" ? 380 : 220;
-  const H = Math.round(Math.min(cap, Math.max(minH, per * ar + pad * 2)));
+  const H = fillWide ? cap : Math.round(Math.min(cap, Math.max(minH, per * ar + pad * 2)));
 
   // 패널 폭: 내용이 세로로 길어 높이가 잘렸으면 필요한 만큼만 쓰고 가운데로 모은다.
   const floor = n === 1 ? 260 : 160;               // 너무 좁으면 끌어 옮길 자리가 없다
@@ -682,6 +584,7 @@ function redraw() {
     }
   });
 
+  drawSelection();
   $("bbox").textContent = shownBbox
     ? `${Math.round(shownBbox[2] - shownBbox[0])} × ${Math.round(shownBbox[3] - shownBbox[1])}`
     : "";
@@ -794,6 +697,7 @@ function setView(nextWhat) {
     k.hidden = !(k.dataset.for ?? "").split(" ").includes(what);
   hover = null; $("hint").textContent = "";
   $("modeSeg").hidden = !(what === "place" || what === "route");
+  syncRun();
   editor?.viewChanged();
   if (what === "schem" || what === "group") ensureViews(viewKey());
   resetView();
@@ -838,26 +742,9 @@ const editHost = {
   refreshDownloads: () => { if (lastRouted) routeDownloads(lastRouted); },
   onModeChange: (on) => layoutForEdit(on),
 };
-// 카드 접기 — 제목을 클릭하면 접히고 펴진다. 편집 모드에 들어가면 편집 카드가 결과 카드 자리(캔버스 바로 옆)에 오고
-// 나머지 카드는 전부 접힌 채 시작한다. 나오면 편집 카드를 감추고 접힘을 들어가기 전대로 되돌린다.
-const foldCards = () => [...document.querySelectorAll(".card.fold")];
-for (const c of foldCards()) c.querySelector(":scope > h2").addEventListener("click", (e) => {
-  if (e.target.closest("button, a, input, select, label")) return;
-  c.classList.toggle("collapsed");
-});
-let foldBefore = null;
+// 편집 모드에서는 편집 카드를 오른쪽 패널 맨 위에 띄운다. 나오면 감춘다.
 function layoutForEdit(on) {
-  const ec = $("editCard"), rc = $("resultCard");
-  if (on && !foldBefore) {
-    foldBefore = new Map(foldCards().map((c) => [c, c.classList.contains("collapsed")]));
-    for (const c of foldCards()) c.classList.add("collapsed");
-    rc.before(ec);
-  } else if (!on && foldBefore) {
-    rc.after(ec);
-    for (const [c, v] of foldBefore) c.classList.toggle("collapsed", v);
-    foldBefore = null;
-  }
-  ec.hidden = !on;
+  $("editCard").hidden = !on;
 }
 // 편집 워커 — 위상 유지 variant 다시 고르기 (배정 x LP, 수 초). 워커가 안 서면 같은 코드를 메인 스레드에서.
 let editWorker = null;
@@ -1106,7 +993,7 @@ function showResult(r) {
 }
 
 // ---------------------------------------------------------------- 실행
-const setStatus = (html) => { $("status").innerHTML = html; };
+const setStatus = (html) => { $("status").innerHTML = html; onStatus(); };
 
 // --- 내 설계 올리기 ---
 //
@@ -1749,4 +1636,184 @@ loadExampleList().then((rows) => {
   if (!rows.length) return;
   preview(rows[0].name);
 });
+
+// ================================================================ 새 화면의 접착 코드
+// 배치·배선·검사 로직은 건드리지 않는다. 화면 상태만 맞춘다.
+// (setStatus 가 이 함수들을 부르므로 var · function 선언으로 둔다 — 정의 전에 불려도 터지지 않게)
+
+/** 진행 중인가 — 진행 메시지에만 점(.dot)이 붙는다. busy 는 완료 문구가 뜬 뒤에 풀려서 쓰지 않는다. */
+function inProgress() { return !!$("status")?.querySelector(".dot"); }
+
+/** 보고 있는 단계의 실행 버튼 하나만 보인다. Schematic·Primitives 에서는 다음에 할 단계. */
+function syncRun() {
+  const run = $("run"), rr = $("routeRun");
+  if (!run || !rr) return;
+  const placed = !!ours, routedNow = !!liveRec;
+  const kind = what === "place" ? "place" : what === "route" ? "route" : (!placed ? "place" : !routedNow ? "route" : "place");
+  run.hidden = kind !== "place";
+  rr.hidden = kind !== "route";
+  run.textContent = placed ? "Placement 다시 실행" : "Placement 실행";
+  rr.textContent = routedNow ? "Routing 다시 실행" : "Routing 실행";
+  run.classList.toggle("primary", !placed);
+  rr.classList.toggle("primary", placed && !routedNow);
+  if (rr.disabled && !placed) rr.title = "Placement 를 먼저 실행해야 Routing 을 할 수 있습니다";
+  const pn = document.querySelector('[data-note="place"]'), rn = document.querySelector('[data-note="route"]');
+  const live = inProgress();
+  const runningRoute = live && /Routing/.test($("status")?.textContent ?? "");
+  const runningPlace = live && !runningRoute && !/앞단|읽는 중/.test($("status")?.textContent ?? "");
+  if (pn) { pn.textContent = runningPlace ? "실행 중" : placed ? "" : "실행 전"; pn.classList.toggle("live", runningPlace); }
+  if (rn) {
+    rn.textContent = runningRoute ? "실행 중" : routeFail ? "실패" : routedNow ? "" : placed ? "실행 전" : "Placement 필요";
+    rn.classList.toggle("live", runningRoute);
+  }
+}
+
+/** 왼쪽 목록 — #ex 의 option 을 그대로 비춘다. 고르면 #ex 의 change 를 태운다 (기존 흐름 그대로). */
+var projFilter = "", projSig = "";
+function renderProjects() {
+  const list = $("projList"), ex = $("ex");
+  if (!list || !ex) return;
+  const opts = [...ex.options];
+  // 진행 메시지마다 불리므로 바뀐 것이 없으면 다시 만들지 않는다
+  const sig = [opts.length, ex.value, projFilter, inProgress(), !!ours, !!liveRec, !!routeFail, liveRec?.errors?.length ?? 0].join("|");
+  if (sig === projSig) return;
+  projSig = sig;
+  $("projCount").textContent = opts.length ? `${opts.length}개` : "";
+  const placed = !!ours, routedNow = !!liveRec;
+  const errs = liveRec?.errors?.length ?? 0;
+  const curStatus = inProgress() ? ["실행 중", "var(--accent)"]
+    : routeFail ? ["Routing 실패", "var(--copper)"]
+    : routedNow ? [`배선 완료, DRC ${errs}`, errs ? "var(--copper)" : "var(--good)"]
+    : placed ? ["Placement까지", "var(--warn)"] : ["실행 전", "var(--idle)"];
+  const f = projFilter.trim().toLowerCase();
+  list.textContent = "";
+  const addGroup = (label, items) => {
+    if (!items.length) return;
+    const g = document.createElement("div"); g.className = "group-label"; g.textContent = label; list.append(g);
+    for (const o of items) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "proj";
+      const on = o.value === ex.value;
+      b.setAttribute("aria-current", String(on));
+      const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = o.value === "__upload__" ? (designName?.() || o.textContent) : o.value;
+      b.append(nm);
+      if (on) {
+        const st = document.createElement("span"); st.className = "st";
+        const dot = document.createElement("i"); dot.style.background = curStatus[1];
+        st.append(dot, curStatus[0]); b.append(st);
+      } else if (o.textContent && o.textContent !== o.value && o.value !== "__upload__") {
+        const st = document.createElement("span"); st.className = "st"; st.textContent = o.textContent; b.append(st);
+      }
+      b.addEventListener("click", () => {
+        if (busy || ex.value === o.value) return;
+        ex.value = o.value;
+        ex.dispatchEvent(new Event("change"));
+        selBlock = null; showSelection();
+        projSig = ""; renderProjects();
+      });
+      list.append(b);
+    }
+  };
+  const match = (o) => !f || o.value.toLowerCase().includes(f) || o.textContent.toLowerCase().includes(f);
+  addGroup("올린 회로", opts.filter((o) => o.value === "__upload__" && match(o)));
+  addGroup("예제 회로", opts.filter((o) => o.value !== "__upload__" && match(o)));
+}
+$("projSearch").addEventListener("input", (e) => { projFilter = e.target.value; projSig = ""; renderProjects(); });
+new MutationObserver(() => { projSig = ""; renderProjects(); }).observe($("ex"), { childList: true });
+
+function onStatus() {
+  try {
+    syncRun();
+    renderProjects();
+    if (!ours && selBlock) { selBlock = null; showSelection(); }
+  } catch (e) {
+    if (!(e instanceof ReferenceError)) throw e;   // 모듈이 다 읽히기 전의 상태 표시 — 끝에서 다시 맞춘다
+  }
+}
+
+// ---- 보기 모드에서 블록 고르기 (Placement 보기) ----
+var selBlock = null, downAt = null;
+function blockAt(px, py) {
+  const d = oursNow(), m = lastMap?.m;
+  if (!d?.rects || !m) return null;
+  const x = (px - m.X(0)) / m.S, y = (m.Y(0) - py) / m.S;     // 화면 -> 레이아웃 (mapper 의 역)
+  let best = null;
+  for (const r of d.rects) {
+    if (x < r.x || x > r.x + r.w || y < r.y || y > r.y + r.h) continue;
+    if (!best || r.w * r.h < best.w * best.h) best = r;
+  }
+  return best?.name ?? null;
+}
+function drawSelection() {
+  if (!selBlock || editMode || what !== "place" || !lastMap?.m) return;
+  const r = oursNow()?.rects?.find((q) => q.name === selBlock);
+  if (!r) return;
+  const m = lastMap.m, x = m.X(r.x), y = m.Y(r.y + r.h), w = r.w * m.S, h = r.h * m.S;
+  const acc = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#0057ff";
+  ctx.save();
+  ctx.strokeStyle = acc; ctx.lineWidth = 1.5; ctx.strokeRect(x - 2, y - 2, w + 4, h + 4);
+  ctx.fillStyle = pal.sunk;
+  for (const [hx, hy] of [[x, y], [x + w, y], [x, y + h], [x + w, y + h]]) {
+    ctx.fillRect(hx - 3, hy - 3, 6, 6); ctx.strokeRect(hx - 3, hy - 3, 6, 6);
+  }
+  ctx.restore();
+}
+function showSelection() {
+  const card = $("selCard");
+  if (!selBlock) { card.hidden = true; return; }
+  const r = oursNow()?.rects?.find((q) => q.name === selBlock);
+  const b = views.get(viewKey())?.blocks?.find((q) => q.name === selBlock);
+  $("selName").textContent = selBlock;
+  $("selKind").textContent = b ? [b.gloss, b.family].filter(Boolean).join(" ") : "";
+  const dl = $("selRows"); dl.textContent = "";
+  const short = (v) => (v ?? "—").replace(/_(\d{6,})_/, "_");
+  if (r) {
+    mkRow(dl, "variant", short(r.concrete));
+    mkRow(dl, "크기", `${Math.round(r.w)}×${Math.round(r.h)}`);
+    mkRow(dl, "위치", `${Math.round(r.x)}, ${Math.round(r.y)}`);
+    mkRow(dl, "반전", `${r.sx > 0 ? "+" : "−"}${r.sy > 0 ? "+" : "−"}`);
+  }
+  if (b) {
+    if (b.devices?.length) mkRow(dl, "소자", b.devices.join(" "));
+    if (b.variants?.length) mkRow(dl, "variant 후보", String(b.variants.length));
+    const cons = [b.sym, b.order && "Order " + b.order, b.align && "Align " + b.align].filter(Boolean).join(" · ");
+    if (cons) mkRow(dl, "제약", cons);
+  }
+  card.hidden = false;
+}
+$("selClose").addEventListener("click", () => { selBlock = null; showSelection(); redraw(); });
+cv.addEventListener("pointerdown", (e) => { downAt = [e.clientX, e.clientY]; });
+cv.addEventListener("pointerup", (e) => {
+  if (!downAt || editMode || what !== "place" || !ours) { downAt = null; return; }
+  const moved = Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]);
+  downAt = null;
+  if (moved > 4) return;                                   // 끌어 이동한 것
+  const [px, py] = canvasXY(e);
+  selBlock = blockAt(px, py);
+  showSelection(); redraw();
+});
+
+// ---- 다크 / 라이트 — 기존 data-theme 처리에 붙인다. 아이콘은 지금 모드를 보인다 ----
+var THEME_KEY = "alg-theme";     // 처음 칠하기 전에 <head> 에서 읽는다
+const darkMQ = window.matchMedia?.("(prefers-color-scheme: dark)");
+const themeNow = () => document.documentElement.dataset.theme || (darkMQ?.matches ? "dark" : "light");
+const SUN = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>';
+const MOON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
+function paintThemeBtn() {
+  const t = themeNow(), b = $("themeBtn");
+  b.innerHTML = t === "dark" ? MOON : SUN;
+  b.title = b.ariaLabel = t === "dark" ? "다크 모드 사용 중 (누르면 라이트 모드)" : "라이트 모드 사용 중 (누르면 다크 모드)";
+}
+$("themeBtn").addEventListener("click", () => {
+  const next = themeNow() === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;        // readPal 이 이 속성을 보고 캔버스를 다시 그린다
+  try { localStorage.setItem(THEME_KEY, next); } catch {}
+  paintThemeBtn();
+});
+darkMQ?.addEventListener?.("change", paintThemeBtn);
+paintThemeBtn();
+syncRun();
+renderProjects();
 </script>
+</body>
+</html>

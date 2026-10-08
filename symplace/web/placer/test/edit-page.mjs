@@ -52,39 +52,29 @@ try {
   const kit = await page.evaluate(() => globalThis.__page.ours.edit ? Object.keys(globalThis.__page.ours.edit.subTemplates).length : null);
   ok(kit !== null, "done 에 편집 키트가 없다");
   console.log(`  편집 켬 · 키트 템플릿 ${kit} 개`);
-  // 편집 카드가 결과 카드 자리에 오고 나머지 카드는 접힌다. 보기로 돌아가면 되돌아온다.
+  // 편집 카드는 오른쪽 패널 맨 위에 뜨고, 보기로 돌아가면 감춰진다.
   const layout = () => page.evaluate(() => {
-    const ec = document.querySelector("#editCard"), rc = document.querySelector("#resultCard");
-    const folds = [...document.querySelectorAll(".card.fold")];
-    return { editShown: !ec.hidden, editFirst: ec.nextElementSibling === rc, folded: folds.filter((c) => c.classList.contains("collapsed")).length, cards: folds.length };
+    const ec = document.querySelector("#editCard");
+    return { editShown: !ec.hidden, editFirst: ec.parentElement.firstElementChild === ec };
   });
   const l1 = await layout();
-  ok(l1.editShown && l1.editFirst, "편집 카드가 결과 카드 자리에 안 왔다");
-  ok(l1.folded === l1.cards, `다른 카드가 다 안 접혔다 (${l1.folded}/${l1.cards})`);
-  await page.click("#resultCard > h2");
-  ok((await layout()).folded === l1.cards - 1, "제목을 클릭해도 카드가 안 펴진다");
+  ok(l1.editShown && l1.editFirst, "편집 카드가 오른쪽 패널 맨 위에 안 왔다");
   await page.click('#modeSeg button[data-mode="view"]');
-  const l2 = await layout();
-  ok(!l2.editShown && !l2.editFirst && l2.folded === l1.cards, `보기로 돌아가도 카드가 안 돌아온다 (편집 ${l2.editShown}, 접힘 ${l2.folded}/${l1.cards})`);
-  await page.click("#resultCard > h2");                       // 보기에서 결과를 열어 두고
-  await page.click('#modeSeg button[data-mode="edit"]');       // 편집에 들어가면 다 접히고
-  await page.waitForTimeout(100);
-  ok((await layout()).folded === l1.cards, "다시 편집을 켜면 다시 접혀야 한다");
-  await page.click('#modeSeg button[data-mode="view"]');       // 나오면 열어 둔 것이 돌아온다
-  ok((await layout()).folded === l1.cards - 1, "보기로 돌아가면 열어 둔 카드가 열려 있어야 한다");
+  ok(!(await layout()).editShown, "보기로 돌아가도 편집 카드가 남아 있다");
   await page.click('#modeSeg button[data-mode="edit"]');
   await page.waitForTimeout(100);
-  // 캔버스는 카드 안을 좌우로 다 채우고 (카드는 왼쪽 열 그대로 — 편집 카드가 옆에 보인다), 그림도 캔버스 좌우를 채운다
+  // 캔버스는 가운데 영역을 좌우로 다 채우고 (편집 카드는 오른쪽 패널), 그림은 캔버스의 가로나 세로를 채운다
   const fill = await page.evaluate(() => {
     const cols = document.querySelector("#cols"), cv = document.querySelector("#cv"), m = globalThis.__page.lastMap?.m, bb = globalThis.__page.ours?.bbox;
-    const cvW = cv.getBoundingClientRect().width;
+    const cr = cv.getBoundingClientRect();
     const ec = document.querySelector("#editCard").getBoundingClientRect(), cc = cv.parentElement.getBoundingClientRect();
-    return { cvW, cardW: cv.parentElement.clientWidth, colsW: cols.clientWidth, drawn: m && bb ? (m.X(bb[2]) - m.X(bb[0])) / cvW : 0, beside: ec.left > cc.right && ec.top < cc.bottom };
+    const fw = m && bb ? (m.X(bb[2]) - m.X(bb[0])) / cr.width : 0, fh = m && bb ? (m.Y(bb[1]) - m.Y(bb[3])) / cr.height : 0;
+    return { cvW: cr.width, cardW: cv.parentElement.clientWidth, colsW: cols.clientWidth, drawn: Math.max(fw, fh), beside: ec.left > cc.right && ec.top < cc.bottom };
   });
-  ok(fill.cvW >= fill.cardW - 2 && fill.cardW < fill.colsW - 100, `캔버스가 카드 안을 다 안 채운다 (${fill.cvW}/${fill.cardW}/${fill.colsW})`);
-  ok(fill.drawn >= 0.85, `그림이 캔버스 좌우를 다 안 채운다 (${(fill.drawn * 100).toFixed(0)} %)`);
+  ok(fill.cvW >= fill.cardW - 2 && fill.cardW < fill.colsW - 100, `캔버스가 가운데 영역을 다 안 채운다 (${fill.cvW}/${fill.cardW}/${fill.colsW})`);
+  ok(fill.drawn >= 0.85, `그림이 캔버스를 다 안 채운다 (${(fill.drawn * 100).toFixed(0)} %)`);
   ok(fill.beside, "편집 카드가 캔버스 옆에 안 보인다");
-  console.log(`  카드: 기본 접힘 ${l2.folded}/${l1.cards}, 편집 카드가 캔버스 옆 결과 자리에, 보기로 가면 되돌아옴 · 캔버스 ${fill.cvW}/${fill.cardW} px, 그림 ${(fill.drawn * 100).toFixed(0)} %`);
+  console.log(`  편집 카드는 오른쪽 패널 맨 위 · 캔버스 ${fill.cvW}/${fill.cardW} px, 그림 ${(fill.drawn * 100).toFixed(0)} %`);
 
   // --- 끌기: 자유 블록(대칭 밖)이 있으면 그것, 없으면 아무 블록 ---
   const pick = await page.evaluate(() => {
@@ -191,6 +181,8 @@ try {
   ok(await page.$eval("#editCard", (e) => e.hidden), "편집 카드가 안 닫힌다");
 
   // ---------------------------------------------------------------- 배선 편집
+  // 실행 버튼은 보고 있는 단계 것만 보인다 — Routing 보기로 옮겨 Routing 을 실행한다
+  await page.click('#whatSeg button[data-what="route"]');
   await page.click("#routeRun");
   await page.waitForFunction(() => /Routing 완료|Routing 실패/.test(document.querySelector("#status").textContent), null, { timeout: 180000 });
   const rs0 = (await page.textContent("#status")).trim();
